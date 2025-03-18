@@ -2,7 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import next from "next";
 import dotenv from "dotenv";
-import { initializeSocket } from "./socket";
+import { initializeSocket } from "./utils/socket";
 
 dotenv.config();
 
