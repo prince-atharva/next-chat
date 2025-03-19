@@ -6,11 +6,11 @@ import { Session } from "next-auth";
 import Image from "next/image";
 
 interface User {
-  name?: string;
-  username?: string;
-  email?: string;
-  image?: string;
-  isEmailVerified?: boolean;
+  name: string;
+  username: string;
+  email: string;
+  image: string;
+  isEmailVerified: boolean;
 }
 
 interface AuthContextType {
