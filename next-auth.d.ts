@@ -6,7 +6,7 @@ declare module "next-auth" {
       id: string;
       name: string;
       username: string;
-      image?: string;
+      image: string;
       isEmailVerified: boolean;
     } & DefaultSession["user"];
   }
@@ -15,7 +15,7 @@ declare module "next-auth" {
     id: string;
     name: string;
     username: string;
-    image?: string;
+    image: string;
     isEmailVerified: boolean;
   }
 }

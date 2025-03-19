@@ -5,7 +5,7 @@ export interface IUser extends Document {
   username: string;
   email: string;
   password?: string;
-  image?: string;
+  image: string;
   isEmailVerified: boolean;
   provider: "google" | "credentials";
 }
@@ -13,7 +13,7 @@ export interface IUser extends Document {
 const UserSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
-    username: { type: String },
+    username: { type: String, default: null },
     email: { type: String, required: true, unique: true },
     password: { type: String },
     image: { type: String },
@@ -22,6 +22,17 @@ const UserSchema = new Schema<IUser>(
   },
   { timestamps: true }
 );
+
+UserSchema.pre("save", function (next) {
+  if (!this.image) {
+    const nameParts = this.name.split(" ");
+    const initials = nameParts
+      .map((part) => part.charAt(0))
+      .join("+");
+    this.image = `https://ui-avatars.com/api/?name=${initials}`;
+  }
+  next();
+});
 
 const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 export default User;

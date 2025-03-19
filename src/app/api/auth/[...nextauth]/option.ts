@@ -4,6 +4,19 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import User from "../../../../../server/model/user.model";
 import { connectToDB } from "../database";
+import mongoose from "mongoose";
+
+async function getUserById(userId: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    console.error("Invalid ObjectId:", userId);
+    return null;
+  }
+
+  return await User.findById(new mongoose.Types.ObjectId(userId)).select(
+    "id name username image email isEmailVerified"
+  );
+}
+
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -33,9 +46,9 @@ export const authOptions: NextAuthOptions = {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          username: user.username || "",
-          image: user.image || null,
-          isEmailVerified: user.isEmailVerified || false,
+          username: user.username,
+          image: user.image,
+          isEmailVerified: user.isEmailVerified,
         };
       },
     }),
@@ -46,22 +59,19 @@ export const authOptions: NextAuthOptions = {
         await connectToDB();
         let existingUser = await User.findOne({ email: user.email });
 
-        if (account?.provider === "google") {
-          if (existingUser && existingUser.provider !== "google") {
-            return false;
-          }
-          if (!existingUser) {
-            existingUser = new User({
-              name: user.name,
-              email: user.email?.toLowerCase(),
-              image: user.image || null,
-              provider: "google",
-              username: "",
-              isEmailVerified: (profile as { email_verified?: boolean })?.email_verified ?? false,
-            });
-            await existingUser.save();
-          }
+        if (account?.provider === "google" && !existingUser) {
+          existingUser = new User({
+            name: user.name,
+            email: user.email?.toLowerCase(),
+            image: user.image || null,
+            provider: "google",
+            username: null,
+            isEmailVerified: (profile as { email_verified?: boolean })?.email_verified ?? false,
+          });
+          await existingUser.save();
         }
+
+        if (!existingUser) throw new Error("User not found");
 
         user.id = existingUser._id
         user.name = existingUser.name
@@ -69,10 +79,12 @@ export const authOptions: NextAuthOptions = {
         user.image = existingUser.image;
         user.isEmailVerified = existingUser.isEmailVerified;
         return true;
-      } catch {
+      } catch (error) {
+        console.error("Sign-in Error:", error);
         return false;
       }
     },
+
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -84,13 +96,27 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
+
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.name = token.name as string;
-        session.user.username = token.username as string;
-        session.user.image = token.image as string;
-        session.user.isEmailVerified = token.isEmailVerified as boolean;
+      await connectToDB();
+      
+      if (!token.id || typeof token.id !== "string" || !mongoose.Types.ObjectId.isValid(token.id)) {
+        console.error("Invalid token ID:", token.id);
+        return session;
+      }
+
+      const updatedUser = await getUserById(token.id);
+
+
+      if (updatedUser) {
+        session.user = {
+          id: updatedUser._id.toString(),
+          name: updatedUser.name,
+          email: updatedUser.email,
+          username: updatedUser.username,
+          image: updatedUser.image,
+          isEmailVerified: updatedUser.isEmailVerified,
+        };
       }
       return session;
     },
@@ -101,8 +127,8 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 604800,
-    updateAge: 86400,
+    maxAge: 7 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",

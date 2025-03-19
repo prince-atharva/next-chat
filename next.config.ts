@@ -9,7 +9,8 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**.ui-avatars.com",
+        hostname: "ui-avatars.com",
+        pathname: '/api/**',
       },
     ],
   },

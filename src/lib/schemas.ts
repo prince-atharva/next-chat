@@ -10,7 +10,7 @@ export const loginSchema = z.object({
 
 export const registerSchema = z
   .object({
-     name: z.string()
+    name: z.string()
       .trim()
       .min(2, "Name must be at least 2 characters long")
       .max(20, "Name cannot exceed 20 characters"),
@@ -31,6 +31,11 @@ export const registerSchema = z
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
+
+export const profileSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  avatar: z.string().optional(),
+});
 
 export type LoginSchemaType = z.infer<typeof loginSchema>;
 export type RegisterSchemaType = z.infer<typeof registerSchema>;
