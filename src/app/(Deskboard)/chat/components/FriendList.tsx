@@ -1,96 +1,25 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
 import { formatDistanceToNowStrict } from "date-fns";
 
-const FriendList = () => {
-  const list = [
-    {
-      image: "https://ui-avatars.com/api/?name=J+D",
-      name: "John Doe",
-      lastMessage: "See you later!",
-      lastSeen: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=S+K",
-      name: "Sarah Khan",
-      lastMessage: "Let's catch up soon!",
-      lastSeen: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      image: "https://ui-avatars.com/api/?name=A+P",
-      name: "Alice Patel",
-      lastMessage: "Great work!",
-      lastSeen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-  ];
+interface FriendListProps {
+  chats: {
+    _id: string;
+    type: "one-to-one" | "group";
+    name: string;
+    profilePicture: string;
+    lastMessage: {
+      content: string;
+      sender?: string;
+      time: string;
+    } | null;
+  }[];
+}
 
-  // Function to format time (auto-detects seconds, minutes, hours, days)
-  const formatTime = (date: Date) => {
-    const formatted = formatDistanceToNowStrict(date, { addSuffix: false });
-
-    return formatted
+const FriendList: React.FC<FriendListProps> = ({ chats }) => {
+  const formatTime = (date: string) => {
+    return formatDistanceToNowStrict(new Date(date))
       .replace(" seconds", "s")
       .replace(" second", "s")
       .replace(" minutes", "m")
@@ -103,23 +32,36 @@ const FriendList = () => {
 
   return (
     <div className="p-2 bg-white rounded-lg w-full h-full">
-      <h2 className="text-lg font-semibold mb-4">Friends</h2>
+      <h2 className="text-lg font-semibold mb-4">Chats</h2>
 
       <ul className="space-y-4">
-        {list.map((friend, index) => (
-          <li key={index} className="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-lg cursor-pointer gap-y-2">
+        {chats.map((chat) => (
+          <li key={chat._id} className="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-lg cursor-pointer">
+            {/* Profile Picture */}
             <Image
-              src={friend.image}
+              src={chat.profilePicture}
               width={50}
               height={50}
               className="rounded-full"
-              alt={friend.name}
+              alt={chat.name}
             />
+
+            {/* Chat Info */}
             <div className="flex-1">
-              <h3 className="text-sm font-medium">{friend.name}</h3>
-              <p className="text-xs text-gray-500">{friend.lastMessage}</p>
+              <h3 className="text-sm font-medium">{chat.name}</h3>
+              <p className="text-xs text-gray-500">
+                {chat.lastMessage
+                  ? chat.type === "group"
+                    ? `${chat.lastMessage.sender}: ${chat.lastMessage.content}`
+                    : chat.lastMessage.content
+                  : "No messages yet"}
+              </p>
             </div>
-            <span className="text-xs text-gray-400">{formatTime(friend.lastSeen)}</span>
+
+            {/* Last Message Time */}
+            <span className="text-xs text-gray-400">
+              {chat.lastMessage ? formatTime(chat.lastMessage.time) : ""}
+            </span>
           </li>
         ))}
       </ul>

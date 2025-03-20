@@ -54,7 +54,7 @@ const MessagesList = () => {
   return (
     <div className="flex-1 overflow-y-auto p-8 space-y-4">
       {messages.map((msg, index) => (
-        <React.Fragment key={msg.id}>
+        <React.Fragment key={index}>
           {/* Day Separator */}
           {shouldShowDate(index) && (
             <div className="text-center text-sm font-semibold text-gray-600 my-4">
