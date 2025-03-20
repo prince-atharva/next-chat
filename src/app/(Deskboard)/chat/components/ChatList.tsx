@@ -14,9 +14,7 @@ const ChatList = () => {
             10
           </span>
         </div>
-        <div>
-          <Plus className="bg-blue-700 text-white rounded-full p-1 size-8 cursor-pointer hover:bg-blue-800 transition" />
-        </div>
+        <Plus className="bg-blue-700 text-white rounded-full p-1 size-8 cursor-pointer hover:bg-blue-800 transition" />
       </div>
 
       {/* Searchbar & Friend List (Scrollable) */}

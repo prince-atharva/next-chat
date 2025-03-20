@@ -26,10 +26,10 @@ const ChatHeader = () => {
       </div>
 
       {/* Call Button */}
-      <button className="bg-blue-100 flex gap-2 px-4 rounded-md text-lg items-center text-blue-800 font-semibold py-2 cursor-pointer">
+      {/* <button className="bg-blue-100 flex gap-2 px-4 rounded-md text-lg items-center text-blue-800 font-semibold py-2 cursor-pointer">
         <Phone className="w-6 h-6" />
         <span>Call</span>
-      </button>
+      </button> */}
     </div>
   );
 };

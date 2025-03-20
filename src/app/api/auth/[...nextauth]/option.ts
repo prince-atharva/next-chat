@@ -23,6 +23,11 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      authorization: {
+        params: {
+          scope: "openid email profile https://mail.google.com/",
+        },
+      },
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -99,7 +104,7 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       await connectToDB();
-      
+
       if (!token.id || typeof token.id !== "string" || !mongoose.Types.ObjectId.isValid(token.id)) {
         console.error("Invalid token ID:", token.id);
         return session;

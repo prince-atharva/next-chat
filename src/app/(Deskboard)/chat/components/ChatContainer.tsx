@@ -1,14 +1,9 @@
-"use client";
-
-import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import Button from "@/ui/Button";
 import ChatHeader from "./ChatHeader";
 import MessagesList from "./MessagesList";
 
 const ChatContainer = () => {
-
-
   return (
     <div className="flex flex-col h-screen w-full">
       {/* Header */}
