@@ -8,6 +8,7 @@ declare module "next-auth" {
       username: string;
       image: string;
       isEmailVerified: boolean;
+      google_accesstoken: string;
     } & DefaultSession["user"];
   }
 
@@ -17,5 +18,6 @@ declare module "next-auth" {
     username: string;
     image: string;
     isEmailVerified: boolean;
+    google_accesstoken: string;
   }
 }

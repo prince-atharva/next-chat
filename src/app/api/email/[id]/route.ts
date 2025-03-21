@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/option";
 
 const GMAIL_API_URL = "https://www.googleapis.com/gmail/v1/users/me/messages";
 const THREAD_API_URL = "https://www.googleapis.com/gmail/v1/users/me/threads";
-const ACCESS_TOKEN = process.env.GMAIL_ACCESS_TOKEN;
-
-if (!ACCESS_TOKEN) {
-  throw new Error("Missing Gmail API access token.");
-}
 
 // Decode Base64 email content
 function decodeBase64(base64Text: string): string {
@@ -26,8 +23,29 @@ function extractLatestMessage(emailHtml: string): string {
   return $.html(); // Return cleaned HTML content
 }
 
+// Extract sender details (Name & Email)
+const extractSenderInfo = (fromHeader: string): { name: string; email: string | null } => {
+  const match = fromHeader.match(/(.*?)\s*<(.*?)>/);
+  return {
+    name: match ? match[1].trim() : fromHeader,
+    email: match ? match[2] : null,
+  };
+};
+
+// Generate profile image based on sender's name
+const getProfileImageUrl = (name: string): string => {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name.toLocaleLowerCase())}&background=random`;
+};
+
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const ACCESS_TOKEN = session?.user.google_accesstoken;
+
+    if (!ACCESS_TOKEN) {
+      return NextResponse.json({ error: "Unauthorized: Missing Access Token" }, { status: 401 });
+    }
+
     // Extract email ID from query params
     const url = new URL(req.nextUrl.href);
     const id = url.pathname.split("/").pop();
@@ -36,13 +54,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email ID." }, { status: 400 });
     }
 
-    // Fetch the primary email
-    const emailResponse = await axios.get(
-      `${GMAIL_API_URL}/${id}?format=full`,
-      {
-        headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
-      }
-    );
+    // Fetch primary email to get the threadId
+    const emailResponse = await axios.get(`${GMAIL_API_URL}/${id}?format=full`, {
+      headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+    });
 
     if (!emailResponse.data) {
       return NextResponse.json({ error: "Email not found." }, { status: 404 });
@@ -52,30 +67,33 @@ export async function GET(req: NextRequest) {
     const threadId = primaryEmail.threadId; // Extract thread ID
 
     // Fetch the entire thread
-    const threadResponse = await axios.get(
-      `${THREAD_API_URL}/${threadId}`,
-      {
-        headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
-      }
-    );
+    const threadResponse = await axios.get(`${THREAD_API_URL}/${threadId}`, {
+      headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+    });
 
     const messages = threadResponse.data.messages || []; // Ensure `messages` is an array
 
-    // Fetch and parse each email in the thread
+    // Extract metadata from the first message (for header details)
+    const firstMessage = messages[0];
+    const firstMessageData = await axios.get(`${GMAIL_API_URL}/${firstMessage.id}?format=full`, {
+      headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+    });
+
+    const firstHeaders = firstMessageData.data.payload.headers;
+    const subject = firstHeaders.find((h: any) => h.name === "Subject")?.value || "No Subject";
+    const fromHeader = firstHeaders.find((h: any) => h.name === "From")?.value || "Unknown Sender";
+    const { name, email } = extractSenderInfo(fromHeader);
+    const profileImage = getProfileImageUrl(name);
+
+    // Process each message in the thread
     const emails = await Promise.all(
       messages.map(async (message: any) => {
         const messageId = message.id;
-        const messageData = await axios.get(
-          `${GMAIL_API_URL}/${messageId}?format=full`,
-          {
-            headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
-          }
-        );
+        const messageData = await axios.get(`${GMAIL_API_URL}/${messageId}?format=full`, {
+          headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+        });
 
-        // Extract email headers
         const headers = messageData.data.payload.headers;
-        const subject = headers.find((h: any) => h.name === "Subject")?.value || "No Subject";
-        const from = headers.find((h: any) => h.name === "From")?.value || "Unknown Sender";
         const date = headers.find((h: any) => h.name === "Date")?.value || "Unknown Date";
 
         // Extract email content
@@ -97,21 +115,27 @@ export async function GET(req: NextRequest) {
 
         return {
           messageId,
-          subject,
-          from,
           date,
           content: extractLatestMessage(content),
         };
       })
     );
 
-    // Always return the array, even if there's only one email
-    return NextResponse.json(emails, { status: 200 });
+    // Return the structured response
+    return NextResponse.json(
+      {
+        threadId,
+        subject,
+        name,
+        email,
+        from: fromHeader,
+        profileImage,
+        messages: emails, // Array of messages in the thread
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching email thread:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch email thread" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch email thread" }, { status: 500 });
   }
 }

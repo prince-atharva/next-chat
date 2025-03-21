@@ -54,6 +54,7 @@ export const authOptions: NextAuthOptions = {
           username: user.username,
           image: user.image,
           isEmailVerified: user.isEmailVerified,
+          google_accesstoken: "accesstoken"
         };
       },
     }),
@@ -83,6 +84,7 @@ export const authOptions: NextAuthOptions = {
         user.username = existingUser.username
         user.image = existingUser.image;
         user.isEmailVerified = existingUser.isEmailVerified;
+        user.google_accesstoken = account?.access_token || "accesstoken"
         return true;
       } catch (error) {
         console.error("Sign-in Error:", error);
@@ -98,6 +100,7 @@ export const authOptions: NextAuthOptions = {
         token.username = user.username;
         token.image = user.image;
         token.isEmailVerified = user.isEmailVerified;
+        token.google_accesstoken = user.google_accesstoken
       }
       return token;
     },
@@ -121,6 +124,7 @@ export const authOptions: NextAuthOptions = {
           username: updatedUser.username,
           image: updatedUser.image,
           isEmailVerified: updatedUser.isEmailVerified,
+          google_accesstoken: token.google_accesstoken as string
         };
       }
       return session;

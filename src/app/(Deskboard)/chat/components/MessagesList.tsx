@@ -1,50 +1,33 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
-import axios from "axios";
+import React, { useRef, useEffect } from "react";
 import { format, isToday, isYesterday } from "date-fns";
 
 interface EmailMessage {
   messageId: string;
-  subject: string;
-  from: string;
   date: string;
-  content: string; // HTML formatted content
+  content: string;
 }
 
-const MessagesList: React.FC = () => {
-  const { id: emailid } = useParams();
-  const [messages, setMessages] = useState<EmailMessage[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const myEmail = "Prince Khant <prince.khant@atharvasystem.com>";
+interface EmailThread {
+  threadId: string;
+  subject: string;
+  name: string;
+  email: string;
+  profileImage: string;
+  messages: EmailMessage[];
+}
+
+const MessagesList: React.FC<{ thread: EmailThread | null; loading: boolean; error: string | null }> = ({ thread, loading, error }) => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!emailid) return;
-
-    const fetchEmails = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`/api/email/${emailid}`);
-        setMessages(response.data);
-      } catch (err) {
-        setError("Failed to fetch messages.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEmails();
-  }, [emailid]);
+  const myEmail = "prince.khant@atharvasystem.com";
 
   // Auto-scroll to last message
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [thread]);
 
   const formatDaySeparator = (date: string) => {
     const messageDate = new Date(date);
@@ -55,17 +38,19 @@ const MessagesList: React.FC = () => {
 
   return (
     <div className="flex-1 overflow-y-auto p-8 space-y-4">
+      {/* Loading & Error States */}
       {loading && <p>Loading messages...</p>}
       {error && <p className="text-red-500">{error}</p>}
-      {!loading && !error && messages.length === 0 && <p>No messages found.</p>}
+      {!loading && !error && !thread && <p>No messages found.</p>}
 
-      {messages.map((msg, index) => {
-        const isMyMessage = msg.from.toLowerCase() === myEmail.toLowerCase();
+      {/* Show Messages */}
+      {thread?.messages.map((msg, index) => {
+        const isMyMessage = thread.email.toLowerCase() === myEmail.toLowerCase();
 
         return (
           <React.Fragment key={msg.messageId}>
             {index === 0 ||
-              (format(messages[index - 1].date, "yyyy-MM-dd") !==
+              (format(thread.messages[index - 1].date, "yyyy-MM-dd") !==
                 format(msg.date, "yyyy-MM-dd") && (
                   <div className="text-center text-sm font-semibold text-gray-600 my-4">
                     {formatDaySeparator(msg.date)}
@@ -75,13 +60,28 @@ const MessagesList: React.FC = () => {
             <div className={`flex ${isMyMessage ? "justify-end" : "justify-start"} gap-2`}>
               {/* Message Bubble */}
               <div
-                className={`p-3 max-w-[70%] rounded-lg shadow text-sm break-words ${isMyMessage ? "bg-blue-500 text-white self-end" : "bg-gray-200 text-black self-start"
+                className={`p-3 max-w-[70%] rounded-lg shadow text-sm w-full break-words overflow-hidden ${isMyMessage ? "bg-blue-500 text-white self-end" : "bg-gray-200 text-black self-start"
                   }`}
               >
-                <div className="font-semibold">{msg.from}</div>
                 <div className="text-xs text-gray-500">{format(new Date(msg.date), "hh:mm a")}</div>
-                <div className="mt-2" dangerouslySetInnerHTML={{ __html: msg.content }} />
+
+                {/* Ensure HTML content does not affect outside elements */}
+                <div
+                  className="mt-2 w-full overflow-auto max-w-full"
+                  style={{ wordBreak: "break-word", maxWidth: "100%" }}
+                >
+                  <div
+                    className="w-full max-w-full"
+                    style={{
+                      maxWidth: "100%",
+                      overflow: "hidden",
+                      wordBreak: "break-word",
+                    }}
+                    dangerouslySetInnerHTML={{ __html: msg.content }}
+                  />
+                </div>
               </div>
+
             </div>
           </React.Fragment>
         );

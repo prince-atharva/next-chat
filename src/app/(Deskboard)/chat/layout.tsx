@@ -4,7 +4,7 @@ import ChatList from "./components/ChatList";
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className='w-full h-full flex'>
-      <div className='w-full max-w-lg'>
+      <div className='w-full max-w-lg min-w-lg'>
         <ChatList />
       </div>
       <div className='w-full'>

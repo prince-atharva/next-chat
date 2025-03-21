@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/option";
 
 interface Email {
   id: string;
@@ -11,12 +13,6 @@ interface Email {
   email: string | null;
   profileImage: string;
   snippet: string;
-}
-
-const ACCESS_TOKEN = process.env.GMAIL_ACCESS_TOKEN;
-
-if (!ACCESS_TOKEN) {
-  throw new Error("Missing Gmail API access token.");
 }
 
 
@@ -34,7 +30,9 @@ const getProfileImageUrl = (name: string): string => {
 
 export async function GET(req: NextRequest) {
   try {
-    const accessToken = process.env.GMAIL_ACCESS_TOKEN;
+    const session = await getServerSession(authOptions);
+
+    const accessToken = session?.user.google_accesstoken;
     if (!accessToken) {
       return NextResponse.json({ error: "Unauthorized: Missing Access Token" }, { status: 401 });
     }
